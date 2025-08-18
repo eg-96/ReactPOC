@@ -132,7 +132,36 @@ In the context of the `TodoProvider` in this project, the `Provider` is used to 
 **A:** Custom hooks encapsulate logic and side effects, making it easy to share and test business logic independently of UI. They help enforce separation of concerns and keep components clean.
 
 ### Q: How do you approach dependency injection or inversion of control in React?
+
 **A:** Use context providers to inject dependencies (e.g., services, API clients) at the top level, and consume them via hooks. This decouples components from concrete implementations and improves testability.
+
+**Example:**
+
+Suppose you have a service (e.g., an API client) that you want to make available to deeply nested components without passing it through every level as a prop. You can use context to inject the dependency at the top level and consume it via a custom hook:
+
+```tsx
+// Create the context and hook
+import { createContext, useContext } from "react";
+import { UserService } from "../services/UserService";
+
+export const UserServiceContext = createContext<UserService | null>(null);
+export function useUserService() {
+  const ctx = useContext(UserServiceContext);
+  if (!ctx) throw new Error("UserServiceContext not found");
+  return ctx;
+}
+
+// Provide the service at the top level
+<UserServiceContext.Provider value={userService}>
+  <App />
+</UserServiceContext.Provider>
+
+// Consume the service in a deeply nested component
+const userService = useUserService();
+userService.getUser(userId).then(...);
+```
+
+This pattern avoids prop drilling, decouples components from concrete implementations, and improves testability.
 
 ### Q: How do you manage side effects and async flows in a scalable React architecture?
 **A:** Encapsulate side effects in custom hooks, use `useEffect` for lifecycle management, and leverage libraries like React Query for advanced async flows. Keep side effects out of reducers and UI components.
@@ -144,7 +173,37 @@ In the context of the `TodoProvider` in this project, the `Provider` is used to 
 **A:** Write pure, stateless components where possible, use dependency injection via context, colocate tests with features, and use React Testing Library for integration tests. Keep logic in hooks for easy unit testing.
 
 ### Q: What is the importance of immutability in React state management?
+
 **A:** Immutability enables efficient change detection, predictable state updates, and helps React optimize re-renders. Always return new objects/arrays when updating state.
+
+**Example:**
+
+Suppose you have a list of todos in your component state:
+
+```tsx
+const [todos, setTodos] = useState([
+  { id: 1, text: "Learn React", completed: false },
+  { id: 2, text: "Build a project", completed: false }
+]);
+```
+
+❌ **Incorrect (Mutating State Directly — Do NOT do this!):**
+```tsx
+// This mutates the original array and object, which can break React's change detection.
+todos[0].completed = true;
+setTodos(todos);
+```
+
+✅ **Correct (Immutable Update — Always do this!):**
+```tsx
+// This creates a new array and new object, preserving immutability.
+const updatedTodos = todos.map(todo =>
+  todo.id === 1 ? { ...todo, completed: true } : todo
+);
+setTodos(updatedTodos);
+```
+
+By always using immutable patterns (like spreading, `map`, `filter`, etc.) when updating state, you ensure React can efficiently detect changes and update the UI predictably.
 
 ### Q: How do you handle error boundaries and fallback UIs in a robust React architecture?
 **A:** Use error boundary components to catch and handle errors in the component tree, and provide user-friendly fallback UIs. This prevents the entire app from crashing due to a single error.
